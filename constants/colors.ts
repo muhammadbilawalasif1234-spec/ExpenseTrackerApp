@@ -1,10 +1,10 @@
 export const COLORS = {
-  primary: "#00D38C",
-  dark: "#0A0A0A",
-  card: "#1A1A1A",
-  cardLight: "#222222",
+  primary: "#00C853",
+  dark: "#121212",
+  card: "#1E1E1E",
   white: "#FFFFFF",
-  gray: "#8A8A8E",
-  expense: "#FF3B30",
-  income: "#00D38C",
+  gray: "#BDBD",
+  income: "#00C853",
+  expense: "#FF3D00",
+  background: "#121212",
 };

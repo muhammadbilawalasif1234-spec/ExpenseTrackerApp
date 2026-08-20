@@ -1,111 +1,70 @@
-import {
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
-import { LineChart } from "react-native-chart-kit";
-import { ChartCard } from "../components/ChartCard";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { BarChart } from "react-native-chart-kit";
+import PieChart from "react-native-pie-chart";
 import { COLORS } from "../constants/colors";
-const screenWidth = Dimensions.get("window").width - 32;
 
-export const ReportsScreen = ({
-  timeTab,
-  setTimeTab,
-  incomeChartData,
-  expenseChartData,
-  totalIncome,
-  totalExpense,
-  lineData,
-}: any) => (
-  <ScrollView
-    style={styles.body}
-    contentContainerStyle={{ paddingBottom: 120 }}
-  >
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.horizontalTabBar}
-    >
-      {["Daily", "Monthly", "Yearly"].map((t) => (
-        <TouchableOpacity
-          key={t}
-          onPress={() => {
-            setTimeTab(t);
+export const ReportsScreen = ({ transactions }: any) => {
+  const expenseByCategory = transactions
+    .filter((t: any) => t.type === "expense")
+    .reduce((acc: any, i: any) => {
+      acc[i.category] = (acc[i.category] || 0) + i.amount;
+      return acc;
+    }, {});
+  const pieData = Object.values(expenseByCategory);
+  const pieColors = ["#FF3D00", "#FF9100", "#FFD600", "#00B0FF", "#D500F9"];
+
+  const barData = {
+    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    datasets: [{ data: [2000, 4500, 2800, 8000, 9900, 4300] }],
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Monthly Overview</Text>
+      <View style={styles.card}>
+        <BarChart
+          data={barData}
+          width={320}
+          height={220}
+          yAxisSuffix="Rs"
+          chartConfig={{
+            backgroundColor: "#1E1E1E",
+            backgroundGradientFrom: "#1E1E1E",
+            backgroundGradientTo: "#1E1E1E",
+            color: () => COLORS.primary,
+            labelColor: () => COLORS.gray,
           }}
-          style={[
-            styles.horizontalTab,
-            timeTab === t && styles.activeHorizontalTab,
-          ]}
-        >
-          <Text
-            style={[
-              styles.horizontalTabText,
-              timeTab === t && styles.activeHorizontalTabText,
-            ]}
-          >
-            {t}
-          </Text>
-        </TouchableOpacity>
-      ))}
+          style={{ borderRadius: 16 }}
+        />
+      </View>
+      <Text style={styles.title}>Expense by Category</Text>
+      <View style={styles.pieCard}>
+        {pieData.length > 0 ? (
+          <PieChart
+            widthAndHeight={180}
+            series={pieData}
+            sliceColor={pieColors}
+          />
+        ) : (
+          <Text style={{ color: COLORS.gray }}>No Data</Text>
+        )}
+      </View>
     </ScrollView>
-    {incomeChartData.length > 0 && (
-      <ChartCard title="Income" total={totalIncome} data={incomeChartData} />
-    )}
-    {expenseChartData.length > 0 && (
-      <ChartCard title="Expense" total={totalExpense} data={expenseChartData} />
-    )}
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Spending Trend</Text>
-      <LineChart
-        data={lineData}
-        width={screenWidth}
-        height={220}
-        chartConfig={{
-          backgroundColor: COLORS.card,
-          backgroundGradientFrom: COLORS.card,
-          backgroundGradientTo: COLORS.card,
-          color: () => COLORS.primary,
-          labelColor: () => COLORS.gray,
-        }}
-        bezier
-        style={{ borderRadius: 16 }}
-      />
-    </View>
-  </ScrollView>
-);
-
+  );
+};
 const styles = StyleSheet.create({
-  body: {
-    flex: 1,
-    backgroundColor: COLORS.dark,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 16,
-  },
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+  container: { padding: 20 },
+  title: {
     color: COLORS.white,
-    marginBottom: 12,
+    fontSize: 18,
+    fontWeight: "bold",
+    marginVertical: 10,
   },
-  horizontalTabBar: { marginBottom: 16 },
-  horizontalTab: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    marginRight: 10,
+  card: { backgroundColor: COLORS.card, borderRadius: 20, padding: 10 },
+  pieCard: {
+    backgroundColor: COLORS.card,
     borderRadius: 20,
-    backgroundColor: "#2A2A2A",
+    padding: 20,
+    alignItems: "center",
   },
-  activeHorizontalTab: { backgroundColor: COLORS.primary },
-  horizontalTabText: { color: COLORS.gray, fontWeight: "bold", fontSize: 13 },
-  activeHorizontalTabText: { color: COLORS.white },
 });

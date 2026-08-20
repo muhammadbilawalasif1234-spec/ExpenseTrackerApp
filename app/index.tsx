@@ -1,18 +1,19 @@
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import {
-    Alert,
-    Modal,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Calendar } from "react-native-calendars";
-import Icon from "react-native-vector-icons/Ionicons";
-import { FilterModal } from "../components/FilterModal";
+import PieChart from "react-native-pie-chart";
+import { CATEGORIES } from "../constants/categories";
 import { COLORS } from "../constants/colors";
 import { useTransactions } from "../hooks/useTransactions";
 import { DashboardScreen } from "../screens/DashboardScreen";
@@ -24,52 +25,19 @@ export default function Index() {
   const [amount, setAmount] = useState("");
   const [timeTab, setTimeTab] = useState("Daily");
   const [modalVisible, setModalVisible] = useState(false);
-  const [filterModal, setFilterModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
-  const [customCategory, setCustomCategory] = useState("");
   const [selectedType, setSelectedType] = useState<"income" | "expense">(
     "expense",
   );
-  const [filterCategory, setFilterCategory] = useState("All");
-  const [activeTxTab, setActiveTxTab] = useState("All");
-  const [searchCategory, setSearchCategory] = useState("");
 
   const { transactions, addTransaction, deleteTransaction } = useTransactions();
 
-  const categories = {
-    income: ["Salary", "Bonus", "Freelance"],
-    expense: ["Food", "Transport", "Bills", "Shopping", "Medicine"],
-  };
-  const allCategories = ["All", ...categories.income, ...categories.expense];
-
-  const getDateDisplay = () => {
-    if (timeTab === "Daily")
-      return selectedDate.toLocaleDateString("en-PK", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    if (timeTab === "Monthly")
-      return selectedDate.toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      });
-    return selectedDate.getFullYear().toString();
-  };
-
   const filteredTransactions = transactions.filter((t) => {
     const tDate = new Date(t.date);
-    let dateMatch =
-      timeTab === "Daily"
-        ? tDate.toDateString() === selectedDate.toDateString()
-        : timeTab === "Monthly"
-          ? tDate.getMonth() === selectedDate.getMonth() &&
-            tDate.getFullYear() === selectedDate.getFullYear()
-          : tDate.getFullYear() === selectedDate.getFullYear();
-    let categoryMatch =
-      filterCategory === "All" || t.category === filterCategory;
-    return dateMatch && categoryMatch;
+    return timeTab === "Daily"
+      ? tDate.toDateString() === selectedDate.toDateString()
+      : true;
   });
 
   const totalIncome = filteredTransactions
@@ -80,36 +48,24 @@ export default function Index() {
     .reduce((total, item) => total + item.amount, 0);
   const savings = totalIncome - totalExpense;
 
-  const incomeSummary = filteredTransactions
-    .filter((t) => t.type === "income")
-    .reduce((summary: Record<string, number>, item) => {
-      summary[item.category] = (summary[item.category] || 0) + item.amount;
-      return summary;
-    }, {});
-  const incomeChartData = Object.keys(incomeSummary).map((cat, i) => ({
-    name: cat,
-    population: incomeSummary[cat],
-    color: ["#00D38C", "#5AC8FA", "#AF52DE"][i % 3],
-    legendFontColor: COLORS.white,
-    legendFontSize: 13,
-  }));
-  const expenseSummary = filteredTransactions
+  const expenseByCategory = filteredTransactions
     .filter((t) => t.type === "expense")
-    .reduce((summary: Record<string, number>, item) => {
-      summary[item.category] = (summary[item.category] || 0) + item.amount;
-      return summary;
+    .reduce((acc: any, i) => {
+      acc[i.category] = (acc[i.category] || 0) + i.amount;
+      return acc;
     }, {});
-  const expenseChartData = Object.keys(expenseSummary).map((cat, i) => ({
-    name: cat,
-    population: expenseSummary[cat],
-    color: ["#FF3B30", "#FF9500", "#FFCC00"][i % 3],
-    legendFontColor: COLORS.white,
-    legendFontSize: 13,
-  }));
+  const expenseData = Object.values(expenseByCategory);
+  const expenseColors = ["#FF3D00", "#FF9100", "#FFD600", "#00B0FF", "#D500F9"];
+  const pieWidthAndHeight = 160;
+  const pieSeries = expenseData.length > 0 ? expenseData : [1];
+  const pieSliceColor =
+    expenseData.length > 0
+      ? expenseColors.slice(0, expenseData.length)
+      : ["#333"];
 
   const handleAddTransaction = (category: string) => {
-    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      Alert.alert("Error", "Please enter a valid amount");
+    if (!amount || isNaN(Number(amount))) {
+      Alert.alert("Error", "Valid amount dalo");
       return;
     }
     addTransaction({
@@ -119,101 +75,81 @@ export default function Index() {
       date: new Date().toISOString(),
     });
     setAmount("");
-    setCustomCategory("");
     setModalVisible(false);
-  };
-  const handleCustomAdd = () => {
-    if (!customCategory.trim()) {
-      Alert.alert("Error", "Please enter category name");
-      return;
-    }
-    handleAddTransaction(customCategory);
-  };
-  const onDelete = (id: number) => {
-    Alert.alert("Delete", "Are you sure?", [
-      { text: "Cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => deleteTransaction(id),
-      },
-    ]);
-  };
-
-  const lineData = {
-    labels: ["W1", "W2", "W3", "W4"],
-    datasets: [
-      {
-        data: [
-          totalExpense / 4 || 0,
-          totalExpense / 2 || 0,
-          totalExpense / 1.5 || 0,
-          totalExpense || 0,
-        ],
-      },
-    ],
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.primary }}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{activeTab}</Text>
-        <TouchableOpacity
-          style={styles.headerIcon}
-          onPress={() => setFilterModal(true)}
-        >
-          <Icon name="options-outline" size={26} color={COLORS.white} />
-        </TouchableOpacity>
-      </View>
+    <View style={{ flex: 1, backgroundColor: COLORS.dark }}>
+      <StatusBar barStyle="light-content" backgroundColor="#00C853" />
 
-      <View style={{ flex: 1 }}>
+      <LinearGradient colors={["#00C853", "#009624"]} style={styles.header}>
+        <Text style={styles.headerLabel}>Total Balance</Text>
+        <Text style={styles.headerAmount}>
+          Rs. {savings.toLocaleString("en-PK")}
+        </Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.headerSub}>Income</Text>
+            <Text style={styles.headerSubAmount}>+ Rs. {totalIncome}</Text>
+          </View>
+          <View>
+            <Text style={styles.headerSub}>Expense</Text>
+            <Text style={styles.headerSubAmount}>- Rs. {totalExpense}</Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <ScrollView style={{ marginTop: -20 }}>
+        <View style={styles.pieContainer}>
+          {expenseData.length === 0 ? (
+            <View style={styles.pieEmpty}>
+              <Text style={{ color: COLORS.gray }}>No Expense</Text>
+            </View>
+          ) : (
+            <>
+              <PieChart
+                widthAndHeight={pieWidthAndHeight}
+                series={pieSeries}
+                sliceColor={pieSliceColor}
+                coverRadius={0.6}
+                coverFill={COLORS.dark}
+              />
+              <View style={styles.pieCenter}>
+                <Text style={styles.pieLabel}>Total Spent</Text>
+                <Text style={styles.pieAmount}>Rs. {totalExpense}</Text>
+              </View>
+            </>
+          )}
+        </View>
+
         {activeTab === "Dashboard" && (
           <DashboardScreen
-            {...{
-              timeTab,
-              setTimeTab,
-              selectedDate,
-              setShowCalendar,
-              getDateDisplay,
-              filteredTransactions,
-              savings,
-              deleteTransaction: onDelete,
-            }}
+            timeTab={timeTab}
+            setTimeTab={setTimeTab}
+            selectedDate={selectedDate}
+            setShowCalendar={setShowCalendar}
+            filteredTransactions={filteredTransactions}
+            savings={savings}
+            deleteTransaction={deleteTransaction}
           />
         )}
         {activeTab === "Transactions" && (
           <TransactionsScreen
-            {...{
-              activeTxTab,
-              setActiveTxTab,
-              transactions: filteredTransactions,
-              deleteTransaction: onDelete,
-            }}
+            transactions={transactions}
+            deleteTransaction={deleteTransaction}
           />
         )}
         {activeTab === "Reports" && (
-          <ReportsScreen
-            {...{
-              timeTab,
-              setTimeTab,
-              incomeChartData,
-              expenseChartData,
-              totalIncome,
-              totalExpense,
-              lineData,
-            }}
-          />
+          <ReportsScreen transactions={transactions} />
         )}
-        {activeTab === "Dashboard" && (
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => setModalVisible(true)}
-          >
-            <Icon name="add" size={32} color={COLORS.white} />
-          </TouchableOpacity>
-        )}
-      </View>
+      </ScrollView>
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setModalVisible(true)}
+      >
+        <Ionicons name="add" size={32} color={COLORS.white} />
+      </TouchableOpacity>
 
       <View style={styles.bottomTab}>
         {["Dashboard", "Transactions", "Reports"].map((tab) => (
@@ -222,7 +158,7 @@ export default function Index() {
             onPress={() => setActiveTab(tab)}
             style={styles.bottomTabItem}
           >
-            <Icon
+            <Ionicons
               name={
                 tab === "Dashboard"
                   ? "home"
@@ -230,7 +166,7 @@ export default function Index() {
                     ? "list"
                     : "pie-chart"
               }
-              size={26}
+              size={24}
               color={activeTab === tab ? COLORS.primary : COLORS.gray}
             />
             <Text
@@ -245,136 +181,71 @@ export default function Index() {
         ))}
       </View>
 
-      {showCalendar && (
-        <Modal transparent visible={showCalendar}>
-          <View style={styles.modalBg}>
-            <View
-              style={[styles.calendarModal, { backgroundColor: COLORS.card }]}
-            >
-              <View style={styles.calendarHeader}>
-                <Text style={styles.calendarTitle}>Select Date</Text>
-                <TouchableOpacity onPress={() => setShowCalendar(false)}>
-                  <Icon name="close" size={26} color={COLORS.white} />
-                </TouchableOpacity>
-              </View>
-              <Calendar
-                theme={{
-                  backgroundColor: COLORS.card,
-                  calendarBackground: COLORS.card,
-                  textSectionTitleColor: COLORS.gray,
-                  dayTextColor: COLORS.white,
-                  monthTextColor: COLORS.white,
-                  selectedDayBackgroundColor: COLORS.primary,
-                }}
-                markedDates={{
-                  [selectedDate.toISOString().split("T")[0]]: {
-                    selected: true,
-                    selectedColor: COLORS.primary,
-                  },
-                }}
-                onDayPress={(day) => {
-                  setSelectedDate(new Date(day.dateString));
-                  setShowCalendar(false);
-                }}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      <FilterModal
-        visible={filterModal}
-        onClose={() => {
-          setFilterCategory("All");
-          setFilterModal(false);
-        }}
-        {...{
-          searchCategory,
-          setSearchCategory,
-          filterCategory,
-          setFilterCategory,
-          getDateDisplay,
-          onDatePress: () => setShowCalendar(true),
-          allCategories,
-        }}
-      />
-
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalBg}>
-          <View style={[styles.modal, { backgroundColor: COLORS.card }]}>
-            <Text style={styles.modalTitle}>Add Transaction</Text>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>
+              Add {selectedType === "income" ? "Income" : "Expense"}
+            </Text>
             <View style={styles.typeSelector}>
               <TouchableOpacity
                 style={[
                   styles.typeBtn,
-                  selectedType === "income" && styles.activeTypeBtn,
+                  selectedType === "expense" && {
+                    backgroundColor: COLORS.expense,
+                  },
                 ]}
-                onPress={() => setSelectedType("income")}
+                onPress={() => setSelectedType("expense")}
               >
-                <Text style={{ color: COLORS.white, fontWeight: "600" }}>
-                  Income
-                </Text>
+                <Text style={styles.typeText}>Expense</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.typeBtn,
-                  selectedType === "expense" && styles.activeTypeBtn,
+                  selectedType === "income" && {
+                    backgroundColor: COLORS.income,
+                  },
                 ]}
-                onPress={() => setSelectedType("expense")}
+                onPress={() => setSelectedType("income")}
               >
-                <Text style={{ color: COLORS.white, fontWeight: "600" }}>
-                  Expense
-                </Text>
+                <Text style={styles.typeText}>Income</Text>
               </TouchableOpacity>
             </View>
             <TextInput
-              placeholder="Rs. 0"
+              placeholder="Amount"
               placeholderTextColor={COLORS.gray}
               value={amount}
               onChangeText={setAmount}
-              style={[
-                styles.input,
-                { backgroundColor: COLORS.dark, color: COLORS.white },
-              ]}
+              style={styles.input}
               keyboardType="numeric"
             />
-            <View style={styles.buttonRow}>
+            <View style={styles.iconGrid}>
               {(selectedType === "income"
-                ? categories.income
-                : categories.expense
+                ? CATEGORIES.income
+                : CATEGORIES.expense
               ).map((cat) => (
                 <TouchableOpacity
-                  key={cat}
-                  style={styles.catBtn}
-                  onPress={() => handleAddTransaction(cat)}
+                  key={cat.name}
+                  style={styles.iconBox}
+                  onPress={() => handleAddTransaction(cat.name)}
                 >
-                  <Text style={styles.catBtnText}>{cat}</Text>
+                  <Ionicons
+                    name={cat.icon as any}
+                    size={26}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.iconText}>{cat.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <TextInput
-              placeholder="Custom Category"
-              placeholderTextColor={COLORS.gray}
-              value={customCategory}
-              onChangeText={setCustomCategory}
-              style={[
-                styles.input,
-                { backgroundColor: COLORS.dark, color: COLORS.white },
-              ]}
-            />
-            <TouchableOpacity
-              style={[styles.catBtn, { backgroundColor: COLORS.primary }]}
-              onPress={handleCustomAdd}
-            >
-              <Text style={{ color: "white", fontWeight: "bold" }}>
-                Add Custom
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setModalVisible(false)}
-              style={{ marginTop: 16, alignItems: "center" }}
-            >
-              <Text style={{ color: COLORS.expense, fontWeight: "600" }}>
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text
+                style={{
+                  color: COLORS.expense,
+                  textAlign: "center",
+                  marginTop: 10,
+                }}
+              >
                 Cancel
               </Text>
             </TouchableOpacity>
@@ -387,28 +258,41 @@ export default function Index() {
 
 const styles = StyleSheet.create({
   header: {
+    paddingTop: 60,
+    paddingBottom: 40,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? 50 : 60,
-    paddingBottom: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  headerLabel: { color: "#fff", opacity: 0.8, fontSize: 14 },
+  headerAmount: { color: "#fff", fontSize: 40, fontWeight: "bold" },
+  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginTop: 20,
+  },
+  headerSub: { color: "#fff", opacity: 0.8, fontSize: 12 },
+  headerSubAmount: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  pieContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 20,
+  },
+  pieEmpty: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "#222",
+    justifyContent: "center",
     alignItems: "center",
   },
-  headerTitle: {
-    color: COLORS.white,
-    fontSize: 28,
-    fontWeight: "bold",
-    letterSpacing: 0.5,
-  },
-  headerIcon: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-    padding: 10,
-    borderRadius: 14,
-  },
+  pieCenter: { position: "absolute", alignItems: "center" },
+  pieLabel: { color: COLORS.gray, fontSize: 12 },
+  pieAmount: { color: COLORS.white, fontSize: 20, fontWeight: "bold" },
   fab: {
     position: "absolute",
-    bottom: 100,
-    right: 24,
+    bottom: 80,
+    alignSelf: "center",
     backgroundColor: COLORS.primary,
     width: 64,
     height: 64,
@@ -416,64 +300,64 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
   },
   bottomTab: {
     flexDirection: "row",
     backgroundColor: COLORS.card,
-    paddingVertical: 12,
-    paddingBottom: Platform.OS === "android" ? 20 : 30,
+    paddingVertical: 10,
+    paddingBottom: 20,
     borderTopWidth: 1,
     borderTopColor: "#2A2A2A",
   },
   bottomTabItem: { flex: 1, alignItems: "center" },
-  bottomTabText: { fontSize: 12, marginTop: 6, fontWeight: "600" },
+  bottomTabText: { fontSize: 12, marginTop: 4 },
   modalBg: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.85)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "flex-end",
   },
-  modal: { width: "90%", padding: 20, borderRadius: 24 },
+  modal: {
+    backgroundColor: COLORS.card,
+    padding: 20,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: COLORS.white,
     marginBottom: 16,
+    textAlign: "center",
   },
   input: {
+    backgroundColor: COLORS.dark,
+    color: COLORS.white,
     padding: 16,
     borderRadius: 14,
-    marginVertical: 12,
     fontSize: 18,
-    fontWeight: "600",
+    marginBottom: 16,
   },
-  buttonRow: { flexDirection: "row", flexWrap: "wrap" },
-  catBtn: {
-    backgroundColor: COLORS.cardLight,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    margin: 4,
-  },
-  catBtnText: { color: COLORS.white, fontSize: 14, fontWeight: "500" },
   typeSelector: {
     flexDirection: "row",
-    backgroundColor: COLORS.cardLight,
+    backgroundColor: COLORS.dark,
     borderRadius: 14,
     padding: 4,
     marginBottom: 16,
   },
   typeBtn: { flex: 1, padding: 12, alignItems: "center", borderRadius: 10 },
-  activeTypeBtn: { backgroundColor: COLORS.primary },
-  calendarModal: { borderRadius: 24, padding: 20, width: "90%" },
-  calendarHeader: {
+  typeText: { color: COLORS.white, fontWeight: "600" },
+  iconGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
   },
-  calendarTitle: { fontSize: 18, fontWeight: "bold", color: COLORS.white },
+  iconBox: {
+    width: "30%",
+    backgroundColor: COLORS.dark,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  iconText: { color: COLORS.white, fontSize: 12, marginTop: 6 },
 });
