@@ -1,5 +1,6 @@
 {
   "expo": {
+<<<<<<< HEAD
     "name": "ExpenseTracker",
     "slug": "expense-tracker",
     "version": "1.0.0",
@@ -16,5 +17,25 @@
         "backgroundColor": "#00C853"
       }
     }
+=======
+    "name": "Expense Tracker",
+    "slug": "expense-tracker-expo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A"
+      }
+    },
+    "web": {}
+>>>>>>> fff51e5 (Initial commit)
   }
 }
