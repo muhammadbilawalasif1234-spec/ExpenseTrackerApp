@@ -1,451 +1,411 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  DEFAULT_ACCOUNTS,
-  DEFAULT_BUDGETS,
-  DEFAULT_CATEGORIES,
-  DEFAULT_SAVINGS_GOALS,
-  generateSampleTransactions,
-} from '../constants/theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCallback, useEffect, useState } from "react";
+import { useColorScheme } from "react-native";
 import {
   Account,
-  ActiveScreen,
   Budget,
   Category,
   Currency,
-  FilterOptions,
   SavingsGoal,
+  Subcategory,
+  ThemeMode,
   TimeTab,
   Transaction,
-} from '../types';
-import {
-  getStoredAccounts,
-  getStoredBudgets,
-  getStoredCategories,
-  getStoredCurrency,
-  getStoredSavingsGoals,
-  getStoredTransactions,
-  saveStoredAccounts,
-  saveStoredBudgets,
-  saveStoredCategories,
-  saveStoredCurrency,
-  saveStoredSavingsGoals,
-  saveStoredTransactions,
-} from '../utils/storage';
+  UserProfile,
+} from "../types";
 
-export const useExpenseData = () => {
+const DEFAULT_CURRENCY_OBJ: Currency = {
+  code: "USD",
+  symbol: "$",
+  name: "US Dollar",
+  position: "prefix",
+};
+
+const DEFAULT_CATS: Category[] = [
+  {
+    id: "cat-1",
+    name: "Food & Drinks",
+    type: "expense",
+    icon: "fast-food",
+    color: "#F59E0B",
+    subcategories: [],
+  },
+  {
+    id: "cat-2",
+    name: "Shopping",
+    type: "expense",
+    icon: "cart",
+    color: "#EC4899",
+    subcategories: [],
+  },
+  {
+    id: "cat-3",
+    name: "Housing",
+    type: "expense",
+    icon: "home",
+    color: "#8B5CF6",
+    subcategories: [],
+  },
+  {
+    id: "cat-4",
+    name: "Transportation",
+    type: "expense",
+    icon: "car",
+    color: "#3B82F6",
+    subcategories: [],
+  },
+  {
+    id: "cat-5",
+    name: "Salary",
+    type: "income",
+    icon: "cash",
+    color: "#10B981",
+    subcategories: [],
+  },
+];
+
+export function useExpenseData() {
+  const systemColorScheme = useColorScheme();
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+  const [currency, setCurrency] = useState<Currency>(DEFAULT_CURRENCY_OBJ);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
-  const [accounts, setAccounts] = useState<Account[]>(DEFAULT_ACCOUNTS);
-  const [budgets, setBudgets] = useState<Budget[]>(DEFAULT_BUDGETS);
-  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>(DEFAULT_SAVINGS_GOALS);
-  const [currency, setCurrencyState] = useState<Currency>({
-    code: 'PKR',
-    symbol: 'Rs. ',
-    name: 'Pakistani Rupee',
-    position: 'prefix',
-  });
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  const [activeScreen, setActiveScreen] = useState<ActiveScreen>('dashboard');
-  const [timeTab, setTimeTab] = useState<TimeTab>('Monthly');
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATS);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
+    null,
+  );
+  const [timeTab, setTimeTab] = useState<TimeTab>("Monthly");
+  const [activeScreen, setActiveScreen] = useState<string>("dashboard");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
-  const [activeTxTab, setActiveTxTab] = useState<'All' | 'Income' | 'Expense' | 'Transfer'>('All');
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
-  const [filters, setFilters] = useState<FilterOptions>({
-    searchQuery: '',
-    type: 'all',
-    category: 'all',
-    accountId: 'all',
-    startDate: '',
-    endDate: '',
-    sortBy: 'date-desc',
+  const [customStartDate, setCustomStartDate] = useState<Date>(
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  );
+  const [customEndDate, setCustomEndDate] = useState<Date>(new Date());
+
+  const [profile, setProfile] = useState<UserProfile>({
+    firstName: "Muhammad",
+    lastName: "Bilawal",
+    email: "",
+    phone: "",
+    bio: "Mobile App Developer",
+    username: "muhammadbilawal",
+    avatarUrl: null,
+    showAds: true,
   });
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [isGoalModalOpen, setIsGoalModalOpen] = useState<boolean>(false);
-  const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
-  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState<boolean>(false);
+  const [ledgerNotes, setLedgerNotes] = useState<any[]>([]);
 
-  // Load initial data from AsyncStorage
   useEffect(() => {
-    const loadAll = async () => {
+    async function loadData() {
       try {
-        const [txs, cats, accs, bdgs, goals, curr] = await Promise.all([
-          getStoredTransactions(),
-          getStoredCategories(),
-          getStoredAccounts(),
-          getStoredBudgets(),
-          getStoredSavingsGoals(),
-          getStoredCurrency(),
-        ]);
-        setTransactions(txs);
-        setCategories(cats);
-        setAccounts(accs);
-        setBudgets(bdgs);
-        setSavingsGoals(goals);
-        setCurrencyState(curr);
+        const storedTheme = await AsyncStorage.getItem("@spendly_theme_mode");
+        if (storedTheme) {
+          setThemeMode(storedTheme as ThemeMode);
+        } else {
+          setThemeMode("light");
+        }
+
+        const storedCurrency = await AsyncStorage.getItem("@spendly_currency");
+        if (storedCurrency) {
+          const parsedCurr = JSON.parse(storedCurrency);
+          setCurrency(parsedCurr);
+        }
+
+        const storedTransactions = await AsyncStorage.getItem(
+          "@spendly_transactions",
+        );
+        if (storedTransactions) setTransactions(JSON.parse(storedTransactions));
+
+        const storedAccounts = await AsyncStorage.getItem("@spendly_accounts");
+        if (storedAccounts) {
+          setAccounts(JSON.parse(storedAccounts));
+        } else {
+          const defaultAccounts: Account[] = [
+            {
+              id: "acc-1",
+              name: "Cash",
+              balance: 0,
+              initialBalance: 0,
+              type: "cash",
+              icon: "wallet",
+              color: "#3B82F6",
+            },
+            {
+              id: "acc-2",
+              name: "Bank Account",
+              balance: 0,
+              initialBalance: 0,
+              type: "bank",
+              icon: "card",
+              color: "#10B981",
+            },
+          ];
+          setAccounts(defaultAccounts);
+          await AsyncStorage.setItem(
+            "@spendly_accounts",
+            JSON.stringify(defaultAccounts),
+          );
+        }
+
+        const storedProfile = await AsyncStorage.getItem("@spendly_profile");
+        if (storedProfile) setProfile(JSON.parse(storedProfile));
       } catch (e) {
-        console.error('Failed to load initial data:', e);
+        console.log("Failed to load local data", e);
       } finally {
         setIsLoading(false);
       }
-    };
-    loadAll();
+    }
+    loadData();
   }, []);
 
-  // Save changes
-  useEffect(() => {
-    if (!isLoading) {
-      saveStoredTransactions(transactions);
-    }
-  }, [transactions, isLoading]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      saveStoredAccounts(accounts);
-    }
-  }, [accounts, isLoading]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      saveStoredBudgets(budgets);
-    }
-  }, [budgets, isLoading]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      saveStoredSavingsGoals(savingsGoals);
-    }
-  }, [savingsGoals, isLoading]);
-
-  const setCurrency = (c: Currency) => {
-    setCurrencyState(c);
-    saveStoredCurrency(c);
+  const handleSetThemeMode = async (mode: ThemeMode) => {
+    setThemeMode(mode);
+    try {
+      await AsyncStorage.setItem("@spendly_theme_mode", mode);
+    } catch {}
   };
 
-  const calculatedAccounts = useMemo(() => {
-    return accounts.map((acc) => {
-      let currentBal = acc.initialBalance;
-      transactions.forEach((tx) => {
-        if (tx.type === 'income' && tx.accountId === acc.id) {
-          currentBal += tx.amount;
-        } else if (tx.type === 'expense' && tx.accountId === acc.id) {
-          currentBal -= tx.amount;
-        } else if (tx.type === 'transfer') {
-          if (tx.accountId === acc.id) {
-            currentBal -= tx.amount;
-          }
-          if (tx.toAccountId === acc.id) {
-            currentBal += tx.amount;
-          }
-        }
-      });
-      return {
-        ...acc,
-        balance: currentBal,
-      };
-    });
-  }, [accounts, transactions]);
+  const handleSetCurrency = async (newCurr: Currency) => {
+    setCurrency(newCurr);
+    try {
+      await AsyncStorage.setItem("@spendly_currency", JSON.stringify(newCurr));
+    } catch (e) {
+      console.log("Failed to save currency", e);
+    }
+  };
 
-  const totalBalance = useMemo(() => {
-    return calculatedAccounts.reduce((acc, a) => acc + a.balance, 0);
-  }, [calculatedAccounts]);
+  const resolvedTheme =
+    themeMode === "dark"
+      ? "dark"
+      : themeMode === "light"
+        ? "light"
+        : systemColorScheme === "dark"
+          ? "dark"
+          : "light";
 
-  const periodFilteredTransactions = useMemo(() => {
-    const target = new Date(selectedDate);
-    const targetYear = target.getFullYear();
-    const targetMonth = target.getMonth();
-    const targetDateNum = target.getDate();
+  const toggleTheme = () => {
+    const nextMode = resolvedTheme === "dark" ? "light" : "dark";
+    handleSetThemeMode(nextMode);
+  };
 
-    return transactions.filter((tx) => {
-      const txDate = new Date(tx.date);
-      if (timeTab === 'Daily') {
-        return (
-          txDate.getFullYear() === targetYear &&
-          txDate.getMonth() === targetMonth &&
-          txDate.getDate() === targetDateNum
-        );
-      }
-      if (timeTab === 'Monthly') {
-        return txDate.getFullYear() === targetYear && txDate.getMonth() === targetMonth;
-      }
-      if (timeTab === 'Yearly') {
-        return txDate.getFullYear() === targetYear;
-      }
-      return true;
-    });
-  }, [transactions, timeTab, selectedDate]);
+  const totalBalance = accounts.reduce((acc, curr) => acc + curr.balance, 0);
 
-  const periodStats = useMemo(() => {
-    let income = 0;
-    let expense = 0;
+  const periodStats = {
+    income: transactions
+      .filter((t) => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0),
+    expense: transactions
+      .filter((t) => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0),
+  };
 
-    periodFilteredTransactions.forEach((tx) => {
-      if (tx.type === 'income') {
-        income += tx.amount;
-      } else if (tx.type === 'expense') {
-        expense += tx.amount;
-      }
-    });
+  const periodFilteredTransactions = transactions;
 
-    const netSavings = income - expense;
-    const savingsRate = income > 0 ? Math.max(0, Math.round((netSavings / income) * 100)) : 0;
-
-    return {
-      income,
-      expense,
-      netSavings,
-      savingsRate,
+  const addTransaction = async (data: Omit<Transaction, "id">) => {
+    const newTx: Transaction = {
+      ...data,
+      id: Date.now().toString(),
     };
-  }, [periodFilteredTransactions]);
-
-  const categorySpendingData = useMemo(() => {
-    const expenseTx = periodFilteredTransactions.filter((t) => t.type === 'expense');
-    const categoryTotals: Record<string, { total: number; count: number }> = {};
-
-    let totalExpenseAmount = 0;
-    expenseTx.forEach((tx) => {
-      totalExpenseAmount += tx.amount;
-      if (!categoryTotals[tx.category]) {
-        categoryTotals[tx.category] = { total: 0, count: 0 };
-      }
-      categoryTotals[tx.category].total += tx.amount;
-      categoryTotals[tx.category].count += 1;
-    });
-
-    const items = Object.entries(categoryTotals)
-      .map(([catName, data]) => {
-        const matchingCat = categories.find((c) => c.name.toLowerCase() === catName.toLowerCase());
-        const color = matchingCat?.color || '#FF5722';
-        const percentage = totalExpenseAmount > 0 ? (data.total / totalExpenseAmount) * 100 : 0;
-
-        return {
-          category: catName,
-          total: data.total,
-          count: data.count,
-          percentage,
-          color,
-          icon: matchingCat?.icon || 'Tag',
-        };
-      })
-      .sort((a, b) => b.total - a.total);
-
-    return {
-      items,
-      totalExpense: totalExpenseAmount,
-    };
-  }, [periodFilteredTransactions, categories]);
-
-  // Rolling 6-month cash flow trend data for Monthly Overview Chart
-  const cashFlowTrendData = useMemo(() => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentMonth = new Date().getMonth();
-    const result = [];
-
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(currentMonth - i);
-      const mIdx = d.getMonth();
-      const yr = d.getFullYear();
-
-      let mIncome = 0;
-      let mExpense = 0;
-
-      transactions.forEach((tx) => {
-        const txD = new Date(tx.date);
-        if (txD.getMonth() === mIdx && txD.getFullYear() === yr) {
-          if (tx.type === 'income') mIncome += tx.amount;
-          if (tx.type === 'expense') mExpense += tx.amount;
-        }
-      });
-
-      result.push({
-        label: months[mIdx],
-        income: mIncome,
-        expense: mExpense,
-        net: mIncome - mExpense,
-      });
-    }
-
-    return result;
-  }, [transactions]);
-
-  const filteredTransactions = useMemo(() => {
-    let result = [...transactions];
-
-    if (activeTxTab !== 'All') {
-      result = result.filter((t) => t.type === activeTxTab.toLowerCase());
-    }
-
-    if (selectedAccountId) {
-      result = result.filter(
-        (t) => t.accountId === selectedAccountId || t.toAccountId === selectedAccountId
+    const updated = [newTx, ...transactions];
+    setTransactions(updated);
+    try {
+      await AsyncStorage.setItem(
+        "@spendly_transactions",
+        JSON.stringify(updated),
       );
-    }
+    } catch {}
+  };
 
-    if (filters.searchQuery.trim()) {
-      const q = filters.searchQuery.toLowerCase();
-      result = result.filter(
-        (t) =>
-          t.category.toLowerCase().includes(q) ||
-          (t.note && t.note.toLowerCase().includes(q))
-      );
-    }
-
-    if (filters.category !== 'all') {
-      result = result.filter((t) => t.category.toLowerCase() === filters.category.toLowerCase());
-    }
-
-    if (filters.accountId !== 'all') {
-      result = result.filter(
-        (t) => t.accountId === filters.accountId || t.toAccountId === filters.accountId
-      );
-    }
-
-    result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return result;
-  }, [transactions, activeTxTab, selectedAccountId, filters]);
-
-  const addTransaction = useCallback((newTx: Omit<Transaction, 'id'>) => {
-    const created: Transaction = {
-      ...newTx,
-      id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-    };
-    setTransactions((prev) => [created, ...prev]);
-    return created;
-  }, []);
-
-  const updateTransaction = useCallback((id: string, updatedFields: Partial<Transaction>) => {
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updatedFields } : t))
+  const updateTransaction = async (
+    id: string,
+    updatedFields: Partial<Transaction>,
+  ) => {
+    const updated = transactions.map((t) =>
+      t.id === id ? { ...t, ...updatedFields } : t,
     );
-  }, []);
-
-  const deleteTransaction = useCallback((id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const addOrUpdateBudget = useCallback((budget: Budget) => {
-    setBudgets((prev) => {
-      const idx = prev.findIndex((b) => b.category.toLowerCase() === budget.category.toLowerCase());
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = budget;
-        return next;
-      }
-      return [...prev, { ...budget, id: `b-${Date.now()}` }];
-    });
-  }, []);
-
-  const deleteBudget = useCallback((id: string) => {
-    setBudgets((prev) => prev.filter((b) => b.id !== id));
-  }, []);
-
-  const addSavingsGoal = useCallback((goal: Omit<SavingsGoal, 'id'>) => {
-    const newGoal: SavingsGoal = {
-      ...goal,
-      id: `goal-${Date.now()}`,
-    };
-    setSavingsGoals((prev) => [...prev, newGoal]);
-  }, []);
-
-  const updateSavingsGoal = useCallback((id: string, update: Partial<SavingsGoal>) => {
-    setSavingsGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...update } : g)));
-  }, []);
-
-  const deleteSavingsGoal = useCallback((id: string) => {
-    setSavingsGoals((prev) => prev.filter((g) => g.id !== id));
-  }, []);
-
-  const addAccount = useCallback((acc: Omit<Account, 'id' | 'balance'>) => {
-    const newAcc: Account = {
-      ...acc,
-      id: `acc-${Date.now()}`,
-      balance: acc.initialBalance,
-    };
-    setAccounts((prev) => [...prev, newAcc]);
-  }, []);
-
-  const deleteAccount = useCallback((id: string) => {
-    setAccounts((prev) => prev.filter((a) => a.id !== id));
-  }, []);
-
-  const navigatePeriod = (direction: 'prev' | 'next') => {
-    setSelectedDate((prev) => {
-      const next = new Date(prev);
-      if (timeTab === 'Daily') {
-        next.setDate(next.getDate() + (direction === 'next' ? 1 : -1));
-      } else if (timeTab === 'Monthly') {
-        next.setMonth(next.getMonth() + (direction === 'next' ? 1 : -1));
-      } else if (timeTab === 'Yearly') {
-        next.setFullYear(next.getFullYear() + (direction === 'next' ? 1 : -1));
-      }
-      return next;
-    });
+    setTransactions(updated);
+    try {
+      await AsyncStorage.setItem(
+        "@spendly_transactions",
+        JSON.stringify(updated),
+      );
+    } catch {}
   };
 
-  const getPeriodDisplayLabel = () => {
-    if (timeTab === 'Daily') {
-      return selectedDate.toLocaleDateString(undefined, {
-        weekday: 'short',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-    }
-    if (timeTab === 'Monthly') {
-      return selectedDate.toLocaleDateString(undefined, {
-        month: 'long',
-        year: 'numeric',
-      });
-    }
-    return selectedDate.toLocaleDateString(undefined, {
-      year: 'numeric',
-    });
+  const deleteTransaction = async (id: string) => {
+    const updated = transactions.filter((t) => t.id !== id);
+    setTransactions(updated);
+    try {
+      await AsyncStorage.setItem(
+        "@spendly_transactions",
+        JSON.stringify(updated),
+      );
+    } catch {}
   };
+
+  const addOrUpdateBudget = async (budget: Budget) => {
+    const existingIndex = budgets.findIndex((b) => b.id === budget.id);
+    let updated: Budget[];
+    if (existingIndex >= 0) {
+      updated = budgets.map((b) => (b.id === budget.id ? budget : b));
+    } else {
+      updated = [...budgets, budget];
+    }
+    setBudgets(updated);
+  };
+
+  const deleteBudget = async (id: string) => {
+    setBudgets(budgets.filter((b) => b.id !== id));
+  };
+
+  const addSavingsGoal = async (goal: SavingsGoal) => {
+    setSavingsGoals([...savingsGoals, goal]);
+  };
+
+  const updateSavingsGoal = async (
+    id: string,
+    updates: Partial<SavingsGoal>,
+  ) => {
+    setSavingsGoals(
+      savingsGoals.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+    );
+  };
+
+  const deleteSavingsGoal = async (id: string) => {
+    setSavingsGoals(savingsGoals.filter((g) => g.id !== id));
+  };
+
+  const addAccount = async (account: Account) => {
+    const updated = [...accounts, account];
+    setAccounts(updated);
+    try {
+      await AsyncStorage.setItem("@spendly_accounts", JSON.stringify(updated));
+    } catch {}
+  };
+
+  const updateAccount = async (id: string, updates: Partial<Account>) => {
+    const updated = accounts.map((a) =>
+      a.id === id ? { ...a, ...updates } : a,
+    );
+    setAccounts(updated);
+    try {
+      await AsyncStorage.setItem("@spendly_accounts", JSON.stringify(updated));
+    } catch {}
+  };
+
+  const deleteAccount = async (id: string) => {
+    const updated = accounts.filter((a) => a.id !== id);
+    setAccounts(updated);
+    try {
+      await AsyncStorage.setItem("@spendly_accounts", JSON.stringify(updated));
+    } catch {}
+  };
+
+  const addCategory = (cat: Omit<Category, "id">): Category => {
+    const newCat: Category = { ...cat, id: `cat-${Date.now()}` };
+    setCategories([...categories, newCat]);
+    return newCat;
+  };
+
+  const updateCategory = (id: string, updates: Partial<Category>) => {
+    setCategories(
+      categories.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+    );
+  };
+
+  const deleteCategory = (id: string) => {
+    setCategories(categories.filter((c) => c.id !== id));
+  };
+
+  const addSubcategory = (categoryId: string, sub: Omit<Subcategory, "id">) => {
+    setCategories(
+      categories.map((c) => {
+        if (c.id === categoryId) {
+          const newSub: Subcategory = { ...sub, id: `sub-${Date.now()}` };
+          const subs = c.subcategories || [];
+          return { ...c, subcategories: [...subs, newSub] };
+        }
+        return c;
+      }),
+    );
+  };
+
+  const deleteSubcategory = (categoryId: string, subId: string) => {
+    setCategories(
+      categories.map((c) => {
+        if (c.id === categoryId) {
+          const subs = c.subcategories || [];
+          return {
+            ...c,
+            subcategories: subs.filter((s) => s.id !== subId),
+          };
+        }
+        return c;
+      }),
+    );
+  };
+
+  const updateProfile = async (partial: Partial<UserProfile>) => {
+    const updated = { ...profile, ...partial };
+    setProfile(updated);
+    try {
+      await AsyncStorage.setItem("@spendly_profile", JSON.stringify(updated));
+    } catch {}
+  };
+
+  const clearAllData = async () => {
+    try {
+      await AsyncStorage.multiRemove([
+        "@spendly_transactions",
+        "@spendly_accounts",
+        "@spendly_budgets",
+        "@spendly_savings_goals",
+        "@spendly_profile",
+        "@spendly_has_onboarded",
+        "@spendly_currency",
+        "@spendly_user_guide_seen",
+      ]);
+      setTransactions([]);
+      setAccounts([]);
+      setBudgets([]);
+      setSavingsGoals([]);
+      setCurrency(DEFAULT_CURRENCY_OBJ);
+    } catch {}
+  };
+
+  const getPeriodDisplayLabel = () => "This Month";
+
+  const setCustomDateRange = useCallback((start: Date, end: Date) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+    setTimeTab("Custom");
+  }, []);
 
   return {
     isLoading,
-    transactions,
-    categories,
-    accounts: calculatedAccounts,
-    budgets,
-    savingsGoals,
+    totalBalance,
+    periodStats,
     currency,
-    setCurrency,
-    activeScreen,
-    setActiveScreen,
-    timeTab,
-    setTimeTab,
-    selectedDate,
-    setSelectedDate,
+    setCurrency: handleSetCurrency,
+    themeMode,
+    setThemeMode: handleSetThemeMode,
+    resolvedTheme,
+    toggleTheme,
+    accounts,
     selectedAccountId,
     setSelectedAccountId,
-    activeTxTab,
-    setActiveTxTab,
-    filters,
-    setFilters,
-    isFilterModalOpen,
-    setIsFilterModalOpen,
-    isAddModalOpen,
-    setIsAddModalOpen,
-    editingTransaction,
-    setEditingTransaction,
-    isGoalModalOpen,
-    setIsGoalModalOpen,
-    isAccountModalOpen,
-    setIsAccountModalOpen,
-    isBudgetModalOpen,
-    setIsBudgetModalOpen,
-    totalBalance,
+    timeTab,
+    setTimeTab,
     periodFilteredTransactions,
-    periodStats,
-    categorySpendingData,
-    cashFlowTrendData,
-    filteredTransactions,
+    transactions,
+    budgets,
+    savingsGoals,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -455,8 +415,28 @@ export const useExpenseData = () => {
     updateSavingsGoal,
     deleteSavingsGoal,
     addAccount,
+    updateAccount,
     deleteAccount,
-    navigatePeriod,
+    isAddModalOpen,
+    setIsAddModalOpen,
+    activeScreen,
+    setActiveScreen,
+    categories,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addSubcategory,
+    deleteSubcategory,
     getPeriodDisplayLabel,
+    customStartDate,
+    customEndDate,
+    setCustomDateRange,
+    profile,
+    updateProfile,
+    clearAllData,
+    selectedDate,
+    setSelectedDate,
+    ledgerNotes,
+    setLedgerNotes,
   };
-};
+}

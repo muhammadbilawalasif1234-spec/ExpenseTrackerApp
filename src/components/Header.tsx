@@ -1,84 +1,119 @@
-import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Bell, Search, SlidersHorizontal, Sparkles } from 'lucide-react-native';
-import { COLORS } from '../constants/theme';
+import React from "react";
+import { Image, StyleSheet, Text, View, Pressable } from "react-native";
+import { Bell, User, Settings } from "lucide-react-native";
+import { ThemeMode } from "../types";
 
 interface HeaderProps {
   userName?: string;
+  avatarUrl?: string | null;
+  themeMode?: ThemeMode;
+  resolvedTheme?: "light" | "dark";
+  isLight?: boolean;
+  onThemeToggle?: () => void;
   onNotificationsPress?: () => void;
   onProfilePress?: () => void;
+  onSettingsPress?: () => void;
   onSearchPress?: () => void;
+  profileAnchorRef?: React.Ref<View>;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  userName = 'Muhammad Bilawal',
+  userName = "",
+  avatarUrl,
+  themeMode = "light",
+  resolvedTheme = "light",
+  isLight = true,
+  onThemeToggle,
   onNotificationsPress,
   onProfilePress,
+  onSettingsPress,
   onSearchPress,
+  profileAnchorRef,
 }) => {
   return (
     <View style={styles.container}>
-      {/* Profile & Logo Avatar button */}
-      <TouchableOpacity
+      {/* Profile & Avatar Group (Left-aligned) */}
+      <Pressable
+        ref={profileAnchorRef}
+        collapsable={false}
         style={styles.leftRow}
         onPress={onProfilePress}
-        activeOpacity={0.75}
+        accessibilityRole="button"
+        accessibilityLabel="Profile"
       >
-        <View style={styles.avatarWrapper}>
-          <Image
-            source={require('../assets/i.png')}
-            style={styles.avatarImage}
-            resizeMode="cover"
-          />
-          <View style={styles.onlineDot} />
+        {/* Avatar Container (50 x 50, borderRadius: 25) */}
+        <View
+          style={[
+            styles.avatarWrapper,
+            {
+              backgroundColor: isLight ? "#F1F5F9" : "#1E293B",
+              borderColor: isLight ? "#E2E8F0" : "#334155",
+            },
+          ]}
+        >
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+          ) : (
+            <User
+              size={24}
+              color={isLight ? "#94A3B8" : "#64748B"}
+              strokeWidth={1.8}
+            />
+          )}
         </View>
+
+        {/* User Text Info */}
         <View style={styles.textContainer}>
-          <View style={styles.nameRow}>
-            <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">
-              {userName}
-            </Text>
-            <View style={styles.proBadge}>
-              <Text style={styles.proText}>PRO</Text>
-            </View>
-          </View>
-          <Text style={styles.greeting} numberOfLines={1}>
-            Expense Tracker
+          <Text
+            style={[
+              styles.greeting,
+              { color: isLight ? "#64748B" : "#94A3B8" },
+            ]}
+            numberOfLines={1}
+          >
+            {userName && userName.trim() ? "Good Morning!" : "Welcome!"}
+          </Text>
+          <Text
+            style={[
+              styles.userName,
+              { color: isLight ? "#002F52" : "#F1F5F9" },
+            ]}
+            numberOfLines={1}
+          >
+            {userName && userName.trim() ? userName.trim() : "My Profile"}
           </Text>
         </View>
-      </TouchableOpacity>
+      </Pressable>
 
-      {/* Top Bar Action Icons: Search, Notifications, Settings */}
-      <View style={styles.rightButtons}>
-        {/* Search button */}
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={onSearchPress}
-          activeOpacity={0.75}
-          accessibilityLabel="Search"
-        >
-          <Search size={16} color="#CBD5E1" />
-        </TouchableOpacity>
-
-        {/* Notifications Bell button */}
-        <TouchableOpacity
-          style={styles.iconButton}
+      {/* Right Action Group: Notification bell and Settings */}
+      <View style={styles.rightActions}>
+        <Pressable
+          style={styles.iconBtn}
           onPress={onNotificationsPress}
-          activeOpacity={0.75}
+          accessibilityRole="button"
           accessibilityLabel="Notifications"
+          hitSlop={10}
         >
-          <Bell size={16} color="#CBD5E1" />
-          <View style={styles.badge} />
-        </TouchableOpacity>
+          <Bell
+            size={23}
+            color={isLight ? "#0F172A" : "#F1F5F9"}
+            strokeWidth={1.8}
+          />
+        </Pressable>
 
-        {/* Settings / Bio button */}
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={onProfilePress}
-          activeOpacity={0.75}
+        <Pressable
+          style={styles.iconBtn}
+          onPress={onSettingsPress}
+          accessibilityRole="button"
           accessibilityLabel="Settings"
+          hitSlop={10}
         >
-          <SlidersHorizontal size={16} color="#CBD5E1" />
-        </TouchableOpacity>
+          <Settings
+            size={23}
+            color={isLight ? "#0F172A" : "#F1F5F9"}
+            strokeWidth={1.8}
+          />
+        </Pressable>
       </View>
     </View>
   );
@@ -86,106 +121,68 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#0D1117',
-    borderBottomWidth: 1,
-    borderBottomColor: '#21262D',
+    width: "100%",
+    height: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   leftRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     flex: 1,
-    minWidth: 0,
-    marginRight: 10,
   },
   avatarWrapper: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#1E2430',
-    borderWidth: 1.5,
-    borderColor: '#F59E0B',
-    position: 'relative',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatarImage: {
-    width: '100%',
-    height: '100%',
-  },
-  onlineDot: {
-    position: 'absolute',
-    bottom: -1,
-    right: -1,
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
-    backgroundColor: '#10B981',
-    borderWidth: 1.5,
-    borderColor: '#0D1117',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   textContainer: {
-    flex: 1,
-    minWidth: 0,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  userName: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    flexShrink: 1,
-  },
-  proBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.4)',
-  },
-  proText: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: '#F59E0B',
+    justifyContent: "center",
   },
   greeting: {
-    fontSize: 10,
-    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: "400",
+    lineHeight: 18,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: -0.3,
+    lineHeight: 24,
     marginTop: 1,
-    fontWeight: '500',
   },
-  rightButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  rightActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
-  iconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    backgroundColor: '#161B22',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#30363D',
-    flexShrink: 0,
-    position: 'relative',
+  iconBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   badge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#F59E0B',
+    position: "absolute",
+    top: 7,
+    right: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: "#EF4444",
   },
 });
+
+export default Header;

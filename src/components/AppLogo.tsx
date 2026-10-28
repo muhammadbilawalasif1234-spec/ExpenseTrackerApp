@@ -1,6 +1,11 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { ArrowUpRight, Sparkles, TrendingUp, Wallet } from 'lucide-react-native';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import {
+  ArrowUpRight,
+  Sparkles,
+  TrendingUp,
+  Wallet,
+} from "lucide-react-native";
 
 interface AppLogoProps {
   size?: number;
@@ -83,57 +88,57 @@ export const AppLogo: React.FC<AppLogoProps> = ({ size = 40 }) => {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   glow: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
+    position: "absolute",
+    width: "100%",
+    height: "100%",
     borderRadius: 14,
-    backgroundColor: 'rgba(245, 158, 11, 0.35)',
+    backgroundColor: "rgba(245, 158, 11, 0.35)",
     transform: [{ scale: 1.15 }],
   },
   innerBox: {
-    backgroundColor: '#F59E0B',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#F59E0B",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    shadowColor: '#F59E0B',
+    borderColor: "rgba(255, 255, 255, 0.4)",
+    shadowColor: "#F59E0B",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   walletContainer: {
-    backgroundColor: '#FFFFFF',
-    position: 'relative',
-    shadowColor: '#000',
+    backgroundColor: "#FFFFFF",
+    position: "relative",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
     elevation: 3,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   clasp: {
-    position: 'absolute',
-    backgroundColor: '#F59E0B',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    backgroundColor: "#F59E0B",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
   },
   claspDot: {
     width: 2.5,
     height: 2.5,
     borderRadius: 1.5,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   arrowBadge: {
-    position: 'absolute',
+    position: "absolute",
     zIndex: 10,
   },
 });

@@ -1,20 +1,10 @@
 {
-<<<<<<< HEAD
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ]
-=======
-  "compilerOptions": {},
-  "extends": "expo/tsconfig.base"
->>>>>>> fff51e5 (Initial commit)
+  "include": ["**/*.ts", "**/*.tsx"]
 }

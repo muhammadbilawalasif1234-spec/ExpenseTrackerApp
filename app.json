@@ -1,41 +1,61 @@
 {
   "expo": {
-<<<<<<< HEAD
-    "name": "ExpenseTracker",
-    "slug": "expense-tracker",
-    "version": "1.0.0",
-    "scheme": "expensetracker",
-    "icon": "./assets/images/icon.png",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#00C853"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#00C853"
-      }
-    }
-=======
-    "name": "Expense Tracker",
-    "slug": "expense-tracker-expo",
+    "name": "Spendly",
+    "slug": "spendly",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "icon": "./src/assets/Appicon.png",
+    "userInterfaceStyle": "light",
+    "jsEngine": "hermes",
     "splash": {
+      "image": "./src/assets/Appicon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F172A"
+      "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": ["src/assets/*"],
     "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#0F172A"
+      "supportsTablet": true,
+      "bundleIdentifier": "com.spendly.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "web": {}
->>>>>>> fff51e5 (Initial commit)
+    "android": {
+      "package": "com.spendly.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon-safe.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./src/assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25",
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.google.android.gms.** { *; } -keep class com.facebook.hermes.** { *; } -keep class com.facebook.hermes.** { *; }"
+          }
+        }
+      ],
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c2519c45-f8d2-4ac7-9231-57a987e5859e"
+      }
+    },
+    "owner": "bilawalasif"
   }
 }

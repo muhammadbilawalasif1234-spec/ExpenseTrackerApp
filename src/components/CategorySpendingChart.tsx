@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
-import { PieChart as PieChartIcon } from 'lucide-react-native';
-import { COLORS } from '../constants/theme';
-import { Currency } from '../types';
-import { formatCurrency } from '../utils/formatters';
+import React, { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Svg, { Circle, G } from "react-native-svg";
+import { PieChart as PieChartIcon } from "lucide-react-native";
+import { COLORS } from "../constants/theme";
+import { Currency } from "../types";
+import { formatCurrency } from "../utils/formatters";
 
 interface SpendingItem {
   category: string;
@@ -59,7 +59,7 @@ export const CategorySpendingCard: React.FC<CategorySpendingCardProps> = ({
         {items.length > 0 && (
           <View style={styles.badgePill}>
             <Text style={styles.badgeText}>
-              {items.length} {items.length === 1 ? 'Cat' : 'Cats'}
+              {items.length} {items.length === 1 ? "Cat" : "Cats"}
             </Text>
           </View>
         )}
@@ -67,7 +67,9 @@ export const CategorySpendingCard: React.FC<CategorySpendingCardProps> = ({
 
       {items.length === 0 || totalExpense === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No expenses recorded for this period.</Text>
+          <Text style={styles.emptyText}>
+            No expenses recorded for this period.
+          </Text>
         </View>
       ) : (
         <View>
@@ -88,7 +90,10 @@ export const CategorySpendingCard: React.FC<CategorySpendingCardProps> = ({
                   {/* Donut Segments */}
                   {items.map((item) => {
                     const strokeDasharray = `${(item.percentage / 100) * circumference} ${circumference}`;
-                    const strokeDashoffset = -((accumulatedPercent / 100) * circumference);
+                    const strokeDashoffset = -(
+                      (accumulatedPercent / 100) *
+                      circumference
+                    );
                     accumulatedPercent += item.percentage;
                     const isSelected = selectedCategory === item.category;
 
@@ -113,7 +118,7 @@ export const CategorySpendingCard: React.FC<CategorySpendingCardProps> = ({
               {/* Center Donut Label */}
               <View style={styles.donutCenter}>
                 <Text style={styles.donutCenterLabel} numberOfLines={1}>
-                  {activeItem ? activeItem.category : 'Total'}
+                  {activeItem ? activeItem.category : "Total"}
                 </Text>
                 <Text style={styles.donutCenterVal} numberOfLines={1}>
                   {activeItem
@@ -147,12 +152,10 @@ export const CategorySpendingCard: React.FC<CategorySpendingCardProps> = ({
               return (
                 <TouchableOpacity
                   key={item.category}
-                  style={[
-                    styles.itemRow,
-                    isSelected && styles.selectedItemRow,
-                  ]}
+                  style={[styles.itemRow, isSelected && styles.selectedItemRow]}
                   onPress={() => {
-                    const next = selectedCategory === item.category ? null : item.category;
+                    const next =
+                      selectedCategory === item.category ? null : item.category;
                     setSelectedCategory(next);
                     if (next && onSelectCategory) {
                       onSelectCategory(next);
@@ -161,8 +164,16 @@ export const CategorySpendingCard: React.FC<CategorySpendingCardProps> = ({
                   activeOpacity={0.7}
                 >
                   <View style={styles.leftCol}>
-                    <View style={[styles.dot, { backgroundColor: item.color }]} />
-                    <Text style={[styles.categoryName, isSelected && styles.selectedCatName]} numberOfLines={1}>
+                    <View
+                      style={[styles.dot, { backgroundColor: item.color }]}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryName,
+                        isSelected && styles.selectedCatName,
+                      ]}
+                      numberOfLines={1}
+                    >
                       {item.category}
                     </Text>
                   </View>
@@ -183,7 +194,10 @@ export const CategorySpendingCard: React.FC<CategorySpendingCardProps> = ({
 
                   <View style={styles.rightCol}>
                     <Text
-                      style={[styles.amount, isSelected && { color: item.color }]}
+                      style={[
+                        styles.amount,
+                        isSelected && { color: item.color },
+                      ]}
                       numberOfLines={1}
                     >
                       {formatCurrency(item.total, currency)}
@@ -204,23 +218,23 @@ export const CategorySpendingCard: React.FC<CategorySpendingCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: "#1E1E1E",
     borderRadius: 24,
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 10,
     borderWidth: 1,
-    borderColor: '#2E2E2E',
+    borderColor: "#2E2E2E",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     flex: 1,
   },
@@ -228,75 +242,75 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: 'rgba(0, 200, 83, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0, 200, 83, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
   subtitle: {
     fontSize: 10,
-    color: '#94A3B8',
+    color: "#94A3B8",
     marginTop: 1,
   },
   badgePill: {
-    backgroundColor: 'rgba(0, 200, 83, 0.12)',
+    backgroundColor: "rgba(0, 200, 83, 0.12)",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(0, 200, 83, 0.25)',
+    borderColor: "rgba(0, 200, 83, 0.25)",
   },
   badgeText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#00C853',
+    fontWeight: "700",
+    color: "#00C853",
   },
   emptyContainer: {
     paddingVertical: 18,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: {
-    color: '#94A3B8',
+    color: "#94A3B8",
     fontSize: 12,
   },
   chartWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#262626',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#262626",
     borderRadius: 16,
     padding: 12,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: "#333333",
   },
   donutContainer: {
     width: 96,
     height: 96,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   donutCenter: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 4,
   },
   donutCenterLabel: {
     fontSize: 9,
-    fontWeight: '700',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    color: "#94A3B8",
+    textTransform: "uppercase",
   },
   donutCenterVal: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: "800",
+    color: "#FFFFFF",
     marginTop: 1,
   },
   donutMeta: {
@@ -306,42 +320,42 @@ const styles = StyleSheet.create({
   },
   donutMetaTitle: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#CBD5E1',
+    fontWeight: "700",
+    color: "#CBD5E1",
     marginBottom: 2,
   },
   donutMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   donutMetaName: {
     fontSize: 11,
-    color: '#E2E8F0',
+    color: "#E2E8F0",
     flex: 1,
   },
   donutMetaAmount: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   list: {
     gap: 10,
   },
   itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 4,
     paddingHorizontal: 4,
     borderRadius: 8,
   },
   selectedItemRow: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
   },
   leftCol: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     width: 85,
     gap: 6,
     minWidth: 0,
@@ -354,13 +368,13 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#E2E8F0',
+    fontWeight: "600",
+    color: "#E2E8F0",
     flex: 1,
   },
   selectedCatName: {
-    color: '#FFFFFF',
-    fontWeight: '800',
+    color: "#FFFFFF",
+    fontWeight: "800",
   },
   centerCol: {
     flex: 1,
@@ -368,25 +382,25 @@ const styles = StyleSheet.create({
   },
   barBg: {
     height: 5,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: "#2A2A2A",
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   barFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
   rightCol: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
     minWidth: 70,
   },
   amount: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   percentage: {
     fontSize: 9,
-    color: '#94A3B8',
+    color: "#94A3B8",
   },
 });

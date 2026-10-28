@@ -1,404 +1,326 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import {
-  Image,
-  Modal,
+  Animated,
+  Dimensions,
+  Platform,
+  Pressable,
+  StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
-} from 'react-native';
-import {
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  TrendingUp,
-  Wallet,
-  Zap,
-} from 'lucide-react-native';
-import { COLORS } from '../constants/theme';
+} from "react-native";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SpendlyLogo } from "./SpendlyLogo";
 
 interface SplashScreenProps {
   visible: boolean;
   onComplete: () => void;
   appName?: string;
   bio?: string;
+  isLight?: boolean;
 }
 
 const LOADING_STEPS = [
-  { progress: 20, label: 'Initializing financial engine...' },
-  { progress: 48, label: 'Loading multi-wallet balances...' },
-  { progress: 75, label: 'Calculating smart spending insights...' },
-  { progress: 92, label: 'Securing offline encrypted vault...' },
-  { progress: 100, label: 'Expense Tracker ready!' },
+  { progress: 25, label: "Initializing financial engine..." },
+  { progress: 55, label: "Syncing balances & multi-wallets..." },
+  { progress: 80, label: "Calculating smart spending insights..." },
+  { progress: 100, label: "Ready!" },
 ];
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({
   visible,
   onComplete,
-  appName = 'Expense Tracker',
-  bio = 'Smart Wealth & Expense Management â€¢ Take complete control of your financial journey with real-time analytics, multi-wallet sync, and budget goals.',
+  bio = "Track • Budget • Save",
 }) => {
   const [progress, setProgress] = useState(15);
-  const [statusText, setStatusText] = useState('Starting Expense Tracker...');
-  const [isReady, setIsReady] = useState(false);
+  const [statusText, setStatusText] = useState("Starting Spendly...");
+
+  const taglineWords = (bio || "Track • Budget • Save")
+    .split("•")
+    .map((w) => w.trim())
+    .filter(Boolean);
+
+  const insets = useSafeAreaInsets();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } =
+    Dimensions.get("screen");
+  const bottomDistance = Math.max(
+    insets.bottom + 32,
+    Platform.OS === "android" ? 56 : 40,
+  );
+
+  const containerFadeAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0.15)).current;
+
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
+  const hasStartedRef = useRef(false);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      hasStartedRef.current = false;
+      return;
+    }
 
+    // Always ensure initial values are 100% visible on mount or when visible becomes true
+    containerFadeAnim.setValue(1);
+    fadeAnim.setValue(1);
+
+    if (hasStartedRef.current) return;
+    hasStartedRef.current = true;
+
+    // Reset progress state
+    progressAnim.setValue(0.15);
     setProgress(15);
-    setStatusText('Starting Expense Tracker...');
-    setIsReady(false);
+    setStatusText("Starting Spendly...");
 
-    let stepIndex = 0;
+    let stepIdx = 0;
     const interval = setInterval(() => {
-      if (stepIndex < LOADING_STEPS.length) {
-        const step = LOADING_STEPS[stepIndex];
+      if (stepIdx < LOADING_STEPS.length) {
+        const step = LOADING_STEPS[stepIdx];
         setProgress(step.progress);
         setStatusText(step.label);
-        stepIndex++;
+
+        Animated.timing(progressAnim, {
+          toValue: step.progress / 100,
+          duration: 350,
+          useNativeDriver: false,
+        }).start();
+
+        stepIdx++;
       } else {
         clearInterval(interval);
-        setIsReady(true);
+        // Smooth fade-out on completion
+        Animated.parallel([
+          Animated.timing(containerFadeAnim, {
+            toValue: 0,
+            duration: 350,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 350,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          onCompleteRef.current();
+        });
       }
-    }, 450);
+    }, 500);
 
     return () => clearInterval(interval);
-  }, [visible]);
+  }, [visible, containerFadeAnim, fadeAnim, progressAnim]);
 
   if (!visible) return null;
 
   return (
-    <Modal visible={visible} animationType="fade" transparent={false}>
-      <View style={styles.container}>
-        {/* Decorative Ambient Background Glows */}
-        <View style={styles.ambientGlowTop} />
-        <View style={styles.ambientGlowBottom} />
+    <Animated.View
+      style={[
+        styles.splashRoot,
+        {
+          opacity: containerFadeAnim,
+          width: SCREEN_WIDTH,
+          height: SCREEN_HEIGHT,
+        },
+      ]}
+    >
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="transparent"
+        translucent={true}
+      />
 
-        <View style={styles.content}>
-          {/* App Logo with Golden Border & Shadow */}
-          <View style={styles.logoWrapper}>
-            <View style={styles.logoCard}>
-              <Image
-                source={require('../assets/i.png')}
-                style={styles.logoImage}
-                resizeMode="cover"
-              />
-            </View>
-          </View>
+      <Pressable
+        style={[
+          styles.splashContainer,
+          { width: SCREEN_WIDTH, height: SCREEN_HEIGHT },
+        ]}
+        onPress={() => onCompleteRef.current()}
+      >
+        {/* ================= 1. BACKGROUND GRADIENT ================= */}
+        <Svg
+          pointerEvents="none"
+          style={StyleSheet.absoluteFillObject}
+          width={SCREEN_WIDTH}
+          height={SCREEN_HEIGHT}
+          viewBox={`0 0 ${SCREEN_WIDTH} ${SCREEN_HEIGHT}`}
+          preserveAspectRatio="none"
+        >
+          <Defs>
+            <LinearGradient id="figmaSplashGrad" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0.60" stopColor="#FFFFFF" />
+              <Stop offset="0.72" stopColor="#C0CCD6" />
+              <Stop offset="0.80" stopColor="#809AAC" />
+              <Stop offset="0.88" stopColor="#416783" />
+              <Stop offset="1.00" stopColor="#0F3D5E" />
+            </LinearGradient>
+          </Defs>
+          <Rect
+            x="0"
+            y="0"
+            width={SCREEN_WIDTH}
+            height={SCREEN_HEIGHT}
+            fill="url(#figmaSplashGrad)"
+          />
+        </Svg>
 
-          {/* Badge & Title */}
-          <View style={styles.headerSection}>
-            <View style={styles.badgeRow}>
-              <Sparkles size={12} color="#F59E0B" />
-              <Text style={styles.badgeText}>PREMIUM EDITION</Text>
-            </View>
-
-            <Text style={styles.titleText}>{appName}</Text>
-
-            <Text style={styles.bioText} numberOfLines={3}>
-              {bio}
-            </Text>
-          </View>
-
-          {/* Highlights Row */}
-          <View style={styles.featuresRow}>
-            <View style={styles.featureCard}>
-              <View style={[styles.featureIcon, { backgroundColor: 'rgba(0, 200, 83, 0.15)' }]}>
-                <TrendingUp size={15} color={COLORS.primary} />
-              </View>
-              <View style={styles.featureTextCol}>
-                <Text style={styles.featureTitle} numberOfLines={1}>
-                  Analytics
-                </Text>
-                <Text style={styles.featureSubtitle} numberOfLines={1}>
-                  Smart Insights
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.featureCard}>
-              <View style={[styles.featureIcon, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
-                <Wallet size={15} color="#F59E0B" />
-              </View>
-              <View style={styles.featureTextCol}>
-                <Text style={styles.featureTitle} numberOfLines={1}>
-                  Multi-Wallet
-                </Text>
-                <Text style={styles.featureSubtitle} numberOfLines={1}>
-                  Cash & Bank
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Loading Board Card */}
-          <View style={styles.loadingBoard}>
-            <View style={styles.loadingHeader}>
-              <View style={styles.loadingLabelGroup}>
-                <Zap size={14} color="#F59E0B" />
-                <Text style={styles.loadingStatusText} numberOfLines={1}>
-                  {statusText}
-                </Text>
-              </View>
-              <Text style={styles.progressPercent}>{progress}%</Text>
-            </View>
-
-            {/* Progress Bar */}
-            <View style={styles.progressBarTrack}>
-              <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
-            </View>
-
-            <View style={styles.vaultFooter}>
-              <View style={styles.vaultLeft}>
-                <ShieldCheck size={12} color={COLORS.primary} />
-                <Text style={styles.vaultText}>100% Private Offline Vault</Text>
-              </View>
-              <Text style={styles.versionText}>v2.5.0</Text>
-            </View>
-          </View>
-
-          {/* Action Button */}
-          <TouchableOpacity
-            style={[styles.actionBtn, isReady ? styles.actionBtnReady : styles.actionBtnLoading]}
-            onPress={onComplete}
-            activeOpacity={0.85}
+        {/* ================= 2. DEAD-CENTERED MAIN LOGO & TAGLINE ================= */}
+        <View style={styles.centerContainer} pointerEvents="none">
+          <Animated.View
+            style={[
+              styles.logoTaglineGroup,
+              {
+                opacity: fadeAnim,
+              },
+            ]}
           >
-            <Text style={[styles.actionBtnText, isReady && styles.actionBtnTextReady]}>
-              {isReady ? 'Open Dashboard' : 'Skip & Continue'}
-            </Text>
-            <ArrowRight size={16} color={isReady ? '#000000' : '#E2E8F0'} />
-          </TouchableOpacity>
+            {/* Official Spendly Logo (Width: 180, Height: 118) */}
+            <View style={styles.logoBox}>
+              <SpendlyLogo width={180} height={118} />
+            </View>
+
+            {/* Subtitle Tagline Underneath (Track • Budget • Save) */}
+            <View style={styles.taglineWrapper}>
+              {taglineWords.map((word, idx) => (
+                <React.Fragment key={`${word}-${idx}`}>
+                  <Text style={styles.taglineWord}>{word}</Text>
+                  {idx < taglineWords.length - 1 && (
+                    <View style={styles.taglineDot} />
+                  )}
+                </React.Fragment>
+              ))}
+            </View>
+          </Animated.View>
         </View>
-      </View>
-    </Modal>
+
+        {/* ================= 3. ANCHORED BOTTOM LOADING BAR ================= */}
+        <View
+          style={[styles.bottomLoader, { bottom: bottomDistance }]}
+          pointerEvents="none"
+        >
+          <View style={styles.progressTrack}>
+            <Animated.View
+              style={[
+                styles.progressBarFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["0%", "100%"],
+                  }),
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.loaderStatusText}>{statusText}</Text>
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  splashRoot: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 99999,
+    backgroundColor: "#0F3D5E",
+  },
+  splashContainer: {
     flex: 1,
-    backgroundColor: '#0D1117',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "relative",
+    backgroundColor: "#0F3D5E",
+  },
+  centerContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  logoTaglineGroup: {
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 24,
   },
-  ambientGlowTop: {
-    position: 'absolute',
-    top: 60,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+  logoBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
   },
-  ambientGlowBottom: {
-    position: 'absolute',
-    bottom: 40,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(0, 200, 83, 0.1)',
+  taglineWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "nowrap",
+    gap: 8,
   },
-  content: {
-    width: '100%',
-    maxWidth: 380,
-    alignItems: 'center',
-    gap: 18,
+  taglineWord: {
+    fontSize: 13.5,
+    fontWeight: "700",
+    color: "#0F3D5E",
+    letterSpacing: 2,
+    includeFontPadding: false,
   },
-  logoWrapper: {
-    padding: 6,
-    borderRadius: 28,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(245, 158, 11, 0.35)',
-    shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 6 },
+  taglineDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(15, 61, 94, 0.4)",
+  },
+  bottomLoader: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    zIndex: 30,
+    paddingHorizontal: 20,
+  },
+  progressTrack: {
+    width: 230,
+    height: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    borderRadius: 3,
+    overflow: "hidden",
+    borderWidth: 0.5,
+    borderColor: "rgba(255, 255, 255, 0.45)",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  logoCard: {
-    width: 90,
-    height: 90,
-    borderRadius: 22,
-    overflow: 'hidden',
-    backgroundColor: '#1E2430',
-  },
-  logoImage: {
-    width: '100%',
-    height: '100%',
-  },
-  headerSection: {
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 8,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#F59E0B',
-    letterSpacing: 0.5,
-  },
-  titleText: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-  },
-  bioText: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: '#94A3B8',
-    textAlign: 'center',
-    paddingHorizontal: 4,
-  },
-  featuresRow: {
-    flexDirection: 'row',
-    gap: 10,
-    width: '100%',
-  },
-  featureCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 10,
-    borderRadius: 14,
-    backgroundColor: '#161B22',
-    borderWidth: 1,
-    borderColor: '#30363D',
-  },
-  featureIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  featureTextCol: {
-    flex: 1,
-    minWidth: 0,
-  },
-  featureTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  featureSubtitle: {
-    fontSize: 9,
-    color: '#94A3B8',
-    marginTop: 1,
-  },
-  loadingBoard: {
-    width: '100%',
-    backgroundColor: '#161B22',
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#30363D',
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 3,
     elevation: 4,
   },
-  loadingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  loadingLabelGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
-    marginRight: 8,
-  },
-  loadingStatusText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#CBD5E1',
-    flexShrink: 1,
-  },
-  progressPercent: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#F59E0B',
-  },
-  progressBarTrack: {
-    height: 7,
-    backgroundColor: '#0D1117',
-    borderRadius: 4,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(48, 54, 61, 0.6)',
-  },
   progressBarFill: {
-    height: '100%',
-    backgroundColor: '#F59E0B',
-    borderRadius: 4,
+    height: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 3,
   },
-  vaultFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 2,
+  loaderStatusText: {
+    fontSize: 12.5,
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
+    fontWeight: "600",
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
-  vaultLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  vaultText: {
-    fontSize: 10,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  versionText: {
-    fontSize: 10,
-    color: '#64748B',
-  },
-  actionBtn: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 13,
-    borderRadius: 16,
-    marginTop: 4,
-  },
-  actionBtnReady: {
-    backgroundColor: '#F59E0B',
-    shadowColor: '#F59E0B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  actionBtnLoading: {
-    backgroundColor: '#21262D',
-    borderWidth: 1,
-    borderColor: '#30363D',
-  },
-  actionBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#E2E8F0',
-  },
-  actionBtnTextReady: {
-    color: '#000000',
-    fontWeight: '800',
+  absoluteFill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
 });
+
+export default SplashScreen;

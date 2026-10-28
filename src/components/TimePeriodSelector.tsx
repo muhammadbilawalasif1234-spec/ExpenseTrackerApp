@@ -1,15 +1,24 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { COLORS } from '../constants/theme';
-import { TimeTab } from '../types';
+import React from "react";
+import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+} from "lucide-react-native";
+import { TimeTab } from "../types";
 
 interface TimePeriodSelectorProps {
   timeTab: TimeTab;
   onSelectTab: (tab: TimeTab) => void;
-  periodLabel: string;
-  onPrev: () => void;
-  onNext: () => void;
+  periodLabel?: string;
+  onPrev?: () => void;
+  onNext?: () => void;
+  onResetToday?: () => void;
+  isLight?: boolean;
+  selectedDate?: Date;
+  onSelectDate?: (date: Date) => void;
+  showNavBar?: boolean;
 }
 
 export const TimePeriodSelector: React.FC<TimePeriodSelectorProps> = ({
@@ -18,108 +27,227 @@ export const TimePeriodSelector: React.FC<TimePeriodSelectorProps> = ({
   periodLabel,
   onPrev,
   onNext,
+  onResetToday,
+  isLight = true,
+  showNavBar = false,
 }) => {
-  const tabs: TimeTab[] = ['Daily', 'Monthly', 'Yearly'];
+  const tabs: { label: string; value: TimeTab; width?: number }[] = [
+    { label: "Today", value: "Daily" as TimeTab },
+    { label: "This week", value: "Weekly" as TimeTab },
+    { label: "This month", value: "Monthly" as TimeTab },
+    { label: "Total", value: "Total" as TimeTab },
+    { label: "Custom", value: "Custom" as TimeTab },
+  ];
+
+  const navBg = isLight ? "#FFFFFF" : "#161B22";
+  const navBorder = isLight ? "#E2E8F0" : "#30363D";
+  const iconBtnBg = isLight ? "#FFFFFF" : "#21262D";
+  const iconColor = isLight ? "#1E293B" : "#E2E8F0";
+  const labelColor = isLight ? "#0F172A" : "#F8FAFC";
 
   return (
     <View style={styles.container}>
-      {/* Tabs */}
-      <View style={styles.tabsWrapper}>
-        {tabs.map((tab) => {
-          const isActive = timeTab === tab;
+      {/* 5 Tabs matching Home.png + Custom: Today, This week, This month, Total, Custom */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {tabs.map((tab, idx) => {
+          const isActive = timeTab === tab.value;
+
           return (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, isActive && styles.activeTab]}
-              onPress={() => onSelectTab(tab)}
-              activeOpacity={0.8}
+            <Pressable
+              key={`${tab.label}-${idx}`}
+              style={[
+                styles.pill,
+                tab.width ? { width: tab.width } : null,
+                isActive
+                  ? [styles.activePill, { backgroundColor: "#345D7A" }]
+                  : [
+                      styles.inactivePill,
+                      {
+                        backgroundColor: isLight ? "#FFFFFF" : "#161B22",
+                        borderColor: isLight ? "#E2E8F0" : "#30363D",
+                      },
+                    ],
+              ]}
+              onPress={() => onSelectTab(tab.value)}
             >
-              <Text style={[styles.tabText, isActive && styles.activeTabText]}>
-                {tab}
+              <Text
+                style={[
+                  styles.pillText,
+                  isActive
+                    ? styles.activePillText
+                    : [
+                        styles.inactivePillText,
+                        { color: isLight ? "#000000" : "#E2E8F0" },
+                      ],
+                ]}
+              >
+                {tab.label}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
-      {/* Date Navigator */}
-      <View style={styles.navigatorWrapper}>
-        <TouchableOpacity
-          onPress={onPrev}
-          style={styles.arrowButton}
-          activeOpacity={0.7}
+      {/* Optional Calendar Navigation Bar if explicitly toggled */}
+      {showNavBar && periodLabel && timeTab !== "Custom" && (
+        <View
+          style={[
+            styles.navBar,
+            { backgroundColor: navBg, borderColor: navBorder },
+          ]}
         >
-          <ChevronLeft size={20} color={COLORS.grayLight} />
-        </TouchableOpacity>
+          <Pressable
+            style={[styles.navBtn, { backgroundColor: iconBtnBg }]}
+            onPress={onPrev}
+            disabled={timeTab === "Total"}
+          >
+            <ChevronLeft
+              size={16}
+              color={timeTab === "Total" ? "#94A3B8" : iconColor}
+            />
+          </Pressable>
 
-        <Text style={styles.dateLabel}>{periodLabel}</Text>
+          <View style={styles.navLabelContainer}>
+            <Calendar size={13} color="#5D7D95" />
+            <Text
+              style={[styles.navLabelText, { color: labelColor }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.85}
+            >
+              {periodLabel}
+            </Text>
+          </View>
 
-        <TouchableOpacity
-          onPress={onNext}
-          style={styles.arrowButton}
-          activeOpacity={0.7}
-        >
-          <ChevronRight size={20} color={COLORS.grayLight} />
-        </TouchableOpacity>
-      </View>
+          <View style={styles.navRight}>
+            {onResetToday && timeTab !== "Total" && (
+              <Pressable
+                style={[
+                  styles.todayBtn,
+                  {
+                    backgroundColor: isLight
+                      ? "#E0F2FE"
+                      : "rgba(56, 189, 248, 0.15)",
+                  },
+                ]}
+                onPress={onResetToday}
+              >
+                <RotateCcw size={10} color="#5D7D95" />
+                <Text style={[styles.todayBtnText, { color: "#5D7D95" }]}>
+                  Today
+                </Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              style={[styles.navBtn, { backgroundColor: iconBtnBg }]}
+              onPress={onNext}
+              disabled={timeTab === "Total"}
+            >
+              <ChevronRight
+                size={16}
+                color={timeTab === "Total" ? "#94A3B8" : iconColor}
+              />
+            </Pressable>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    marginVertical: 12,
+    height: 42,
   },
-  tabsWrapper: {
-    flexDirection: 'row',
-    backgroundColor: '#1E1E1E',
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 12,
+  scrollContent: {
+    paddingHorizontal: 0,
+    gap: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  pill: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    height: 42,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "transparent",
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 10,
+  activePill: {
+    backgroundColor: "#345D7A",
+    borderColor: "transparent",
   },
-  activeTab: {
-    backgroundColor: COLORS.primary,
-  },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.gray,
-  },
-  activeTabText: {
-    color: '#000000',
-    fontWeight: '700',
-  },
-  navigatorWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  inactivePill: {
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "#E2E8F0",
   },
-  arrowButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#262626',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateLabel: {
+  pillText: {
+    fontFamily: "Poppins",
     fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.white,
+    fontWeight: "600",
+    letterSpacing: 0,
+  },
+  activePillText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  inactivePillText: {
+    color: "#000000",
+  },
+  navBar: {
+    marginHorizontal: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  navBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navLabelContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    marginHorizontal: 4,
+  },
+  navLabelText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  navRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  todayBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3.5,
+    borderRadius: 6,
+  },
+  todayBtnText: {
+    fontSize: 10,
+    fontWeight: "700",
   },
 });
+
+export default TimePeriodSelector;

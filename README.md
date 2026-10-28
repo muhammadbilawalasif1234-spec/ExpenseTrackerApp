@@ -1,55 +1,3 @@
-<<<<<<< HEAD
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-=======
 # 📱 Expense Tracker (React Native & Expo Go)
 
 This folder contains the complete, ready-to-run **React Native (Expo)** version of the Expense Tracker application.
@@ -106,6 +54,53 @@ npx expo start
 
 ---
 
+## 🤖 How to Build Android Release with Gradle (`./gradlew assembleRelease`)
+
+Spendly is pre-configured with modern Expo and Android Gradle configurations (`buildFeatures.buildConfig = true`, resource packaging collision prevention, Kotlin 2.1+, and fallback signing).
+
+### 1. Prebuild the Native Android Project
+Inside the `expo/` folder, run:
+```bash
+npx expo prebuild --platform android
+```
+This generates the native `android/` directory configured with Gradle, AndroidManifest with Google Mobile Ads, and native dependencies.
+
+### 2. Run the Gradle Release Build
+Navigate to the `android/` directory and execute:
+```bash
+# On Linux / macOS:
+cd android && ./gradlew assembleRelease
+
+# On Windows (PowerShell / Command Prompt):
+cd android
+.\gradlew.bat assembleRelease
+```
+
+### 3. Release APK Output Location
+Once the Gradle build finishes successfully, your production APK is located at:
+```
+android/app/build/outputs/apk/release/app-release.apk
+```
+
+### 4. Generating Google Play Bundle (AAB)
+To generate an Android App Bundle for Google Play Store upload:
+```bash
+cd android && ./gradlew bundleRelease
+```
+The resulting bundle is output to:
+```
+android/app/build/outputs/bundle/release/app-release.aab
+```
+
+### 💡 Release Build Configuration Included
+- **`buildConfig = true`**: Injected into `buildFeatures` via `withAndroidBuildConfig.js` so AGP 8+ generates the necessary `BuildConfig` classes.
+- **Packaging Exclusions**: Pre-configured to prevent duplicate `META-INF` file collisions (`INDEX.LIST`, `DEPENDENCIES`, etc.) commonly encountered during Gradle release assembly.
+- **AndroidX Compatibility Fix (`checkReleaseAarMetadata`)**: Includes resolution strategy in Gradle forcing `androidx.core:core:1.15.0` and `androidx.activity:activity:1.9.3` so dependencies requiring Android API 36 compile smoothly with standard `compileSdk 35`.
+- **AdMob Integration**: Android Ad ID permission (`com.google.android.gms.permission.AD_ID`) and App ID metadata are wired up to comply with Google Play policies.
+- **Signing Fallback**: Fallback to debug signature is enabled by default so `./gradlew assembleRelease` runs and completes immediately without throwing missing keystore exceptions.
+
+---
+
 ## 📂 Architecture Overview
 
 - **`src/types/index.ts`**: Unified TypeScript contracts for Transactions, Accounts, Budgets, and Goals.
@@ -113,4 +108,3 @@ npx expo start
 - **`src/utils/storage.ts`**: Async persistent device storage using `@react-native-async-storage/async-storage`.
 - **`src/hooks/useExpenseData.ts`**: Centralized reactive state management & financial calculations.
 - **`src/components/`**: Modular React Native UI components built with `<View>`, `<Text>`, `<TouchableOpacity>`, `<ScrollView>`, and `<Modal>`.
->>>>>>> fff51e5 (Initial commit)

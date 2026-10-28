@@ -1,9 +1,15 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { CreditCard, Landmark, PiggyBank, Plus, Wallet } from 'lucide-react-native';
-import { COLORS } from '../constants/theme';
-import { Account, Currency } from '../types';
-import { formatCurrency } from '../utils/formatters';
+import React from "react";
+import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
+import {
+  CreditCard,
+  Landmark,
+  PiggyBank,
+  Plus,
+  Wallet,
+} from "lucide-react-native";
+import { COLORS } from "../constants/theme";
+import { Account, Currency } from "../types";
+import { formatCurrency } from "../utils/formatters";
 
 interface AccountsListProps {
   accounts: Account[];
@@ -11,6 +17,7 @@ interface AccountsListProps {
   onSelectAccount: (id: string | null) => void;
   onAddAccount: () => void;
   currency: Currency;
+  isLight?: boolean;
 }
 
 export const AccountsList: React.FC<AccountsListProps> = ({
@@ -19,14 +26,15 @@ export const AccountsList: React.FC<AccountsListProps> = ({
   onSelectAccount,
   onAddAccount,
   currency,
+  isLight = false,
 }) => {
-  const getIcon = (type: Account['type'], color: string) => {
+  const getIcon = (type: Account["type"], color: string) => {
     switch (type) {
-      case 'bank':
+      case "bank":
         return <Landmark size={18} color={color} />;
-      case 'credit':
+      case "credit":
         return <CreditCard size={18} color={color} />;
-      case 'savings':
+      case "savings":
         return <PiggyBank size={18} color={color} />;
       default:
         return <Wallet size={18} color={color} />;
@@ -36,13 +44,16 @@ export const AccountsList: React.FC<AccountsListProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text
+          style={[styles.title, isLight && styles.titleLight]}
+          numberOfLines={1}
+        >
           Accounts & Wallets
         </Text>
-        <TouchableOpacity onPress={onAddAccount} style={styles.addButton} activeOpacity={0.8}>
+        <Pressable onPress={onAddAccount} style={styles.addButton}>
           <Plus size={14} color={COLORS.primary} />
           <Text style={styles.addText}>Add</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -50,36 +61,58 @@ export const AccountsList: React.FC<AccountsListProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <TouchableOpacity
+        <Pressable
           onPress={() => onSelectAccount(null)}
           style={[
             styles.accountCard,
-            selectedAccountId === null && styles.accountCardActive,
+            isLight && styles.accountCardLight,
+            selectedAccountId === null &&
+              (isLight
+                ? styles.accountCardActiveLight
+                : styles.accountCardActive),
           ]}
-          activeOpacity={0.8}
         >
-          <View style={[styles.iconContainer, { backgroundColor: '#334155' }]}>
-            <Wallet size={18} color={COLORS.white} />
+          <View
+            style={[
+              styles.iconContainer,
+              isLight
+                ? { backgroundColor: "#E2E8F0" }
+                : { backgroundColor: "#334155" },
+            ]}
+          >
+            <Wallet size={18} color={isLight ? "#0F172A" : COLORS.white} />
           </View>
-          <Text style={styles.accountName} numberOfLines={1}>
+          <Text
+            style={[styles.accountName, isLight && styles.accountNameLight]}
+            numberOfLines={1}
+          >
             All Accounts
           </Text>
-          <Text style={styles.accountBalance} numberOfLines={1}>
+          <Text
+            style={[
+              styles.accountBalance,
+              isLight && styles.accountBalanceLight,
+            ]}
+            numberOfLines={1}
+          >
             Overview
           </Text>
-        </TouchableOpacity>
+        </Pressable>
 
-        {accounts.map((acc) => {
+        {accounts.map((acc, index) => {
           const isSelected = selectedAccountId === acc.id;
           return (
-            <TouchableOpacity
-              key={acc.id}
+            <Pressable
+              key={`${acc.id}-${index}`}
               onPress={() => onSelectAccount(isSelected ? null : acc.id)}
               style={[
                 styles.accountCard,
-                isSelected && styles.accountCardActive,
+                isLight && styles.accountCardLight,
+                isSelected &&
+                  (isLight
+                    ? styles.accountCardActiveLight
+                    : styles.accountCardActive),
               ]}
-              activeOpacity={0.8}
             >
               <View
                 style={[
@@ -89,12 +122,17 @@ export const AccountsList: React.FC<AccountsListProps> = ({
               >
                 {getIcon(acc.type, acc.color)}
               </View>
-              <Text style={styles.accountName} numberOfLines={1} ellipsizeMode="tail">
+              <Text
+                style={[styles.accountName, isLight && styles.accountNameLight]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {acc.name}
               </Text>
               <Text
                 style={[
                   styles.accountBalance,
+                  isLight && styles.accountBalanceLight,
                   acc.balance < 0 && { color: COLORS.expense },
                 ]}
                 numberOfLines={1}
@@ -103,7 +141,7 @@ export const AccountsList: React.FC<AccountsListProps> = ({
               >
                 {formatCurrency(acc.balance, currency)}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </ScrollView>
@@ -116,25 +154,28 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     marginBottom: 10,
   },
   title: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.white,
     flex: 1,
     minWidth: 0,
     marginRight: 8,
   },
+  titleLight: {
+    color: "#0F172A",
+  },
   addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
-    backgroundColor: 'rgba(0, 200, 83, 0.12)',
+    backgroundColor: "rgba(1, 46, 79, 0.12)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -142,7 +183,7 @@ const styles = StyleSheet.create({
   },
   addText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.primary,
   },
   scrollContent: {
@@ -156,29 +197,48 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
+  },
+  accountCardLight: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   accountCardActive: {
     borderColor: COLORS.primary,
-    backgroundColor: '#1E2C22',
+    backgroundColor: "#1E2C22",
+  },
+  accountCardActiveLight: {
+    borderColor: COLORS.primary,
+    backgroundColor: "#ECFDF5",
   },
   iconContainer: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 10,
   },
   accountName: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.grayLight,
     marginBottom: 4,
   },
+  accountNameLight: {
+    color: "#475569",
+  },
   accountBalance: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: "800",
     color: COLORS.white,
+  },
+  accountBalanceLight: {
+    color: "#0F172A",
   },
 });
